@@ -1,4 +1,5 @@
 #  REACT FRONTEND
+- cd MovieDiaryFull
 - cd react
 - cd frontend
 - npm install
@@ -7,8 +8,9 @@
 - npm run dev
 
 
-# Springboot Backend
+# Springboot Backend(new terminal)
+- cd MovieDiaryFull
 - cd backend
 - cd sign
-- mvn clean install
+- mvn clean install -DskipTests
 - mvn spring-boot:run
