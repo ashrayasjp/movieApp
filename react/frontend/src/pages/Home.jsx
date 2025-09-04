@@ -3,8 +3,6 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-
 function Home() {
   const [username, setUsername] = useState(localStorage.getItem("username") || "");
   const [topMovies, setTopMovies] = useState([]);
@@ -12,39 +10,52 @@ function Home() {
   const [fade, setFade] = useState(false);
   const [filteredMovies, setFilteredMovies] = useState([]);
   const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch top 50 most popular non-adult movies from TMDb
+  // Fetch top movies incrementally
   const fetchTopMovies = async () => {
     try {
       let allMovies = [];
       let page = 1;
+
       while (allMovies.length < 50) {
-        const res = await axios.get("https://api.themoviedb.org/3/movie/popular", {
-          params: { api_key: API_KEY, page },
+        const res = await axios.get(`http://localhost:8080/api/movies/popular`, {
+          params: { page },
         });
-        const safeMovies = res.data.results.filter(movie => !movie.adult);
+
+        const safeMovies = res.data.results.filter((movie) => !movie.adult);
         allMovies = [...allMovies, ...safeMovies];
+
+        // Update carousel immediately with first 12 movies
+        if (allMovies.length >= 12 && topMovies.length === 0) {
+          setTopMovies(allMovies.slice(0, 12));
+          setLoading(false);
+        }
+
         page++;
       }
+
+      // After fetching all pages, update topMovies with full 50
       setTopMovies(allMovies.slice(0, 50));
     } catch (err) {
       console.error("Failed to fetch top movies:", err);
+      setLoading(false);
     }
   };
 
-  // Rotate 12 movies at a time with fade effect
+  // Initial fetch
   useEffect(() => {
     fetchTopMovies();
   }, []);
 
+  // Carousel rotation effect
   useEffect(() => {
     if (!topMovies.length) return;
 
     let startIndex = 0;
     const updateMovies = () => {
       setFade(true);
-
       setTimeout(() => {
         const nextMovies = [];
         for (let i = 0; i < 12; i++) {
@@ -52,18 +63,16 @@ function Home() {
         }
         setCurrentMovies(nextMovies);
         setFade(false);
-
         startIndex = (startIndex + 12) % topMovies.length;
       }, 500);
     };
 
     updateMovies();
     const interval = setInterval(updateMovies, 7000);
-
     return () => clearInterval(interval);
   }, [topMovies]);
 
-  // Search movies (exclude adult)
+  // Search movies via backend
   const fetchMovies = async (query) => {
     if (!query.trim()) {
       setFilteredMovies([]);
@@ -72,10 +81,10 @@ function Home() {
     }
 
     try {
-      const res = await axios.get("https://api.themoviedb.org/3/search/movie", {
-        params: { api_key: API_KEY, query },
+      const res = await axios.get(`http://localhost:8080/api/movies/search`, {
+        params: { query },
       });
-      const safeResults = res.data.results.filter(movie => !movie.adult);
+      const safeResults = res.data.results.filter((movie) => !movie.adult);
       setFilteredMovies(safeResults);
       setSearched(true);
     } catch (err) {
@@ -101,11 +110,11 @@ function Home() {
   };
   const handleMovieClick = (movie) => navigate(`/movie/${movie.id}`);
 
-  // Split 12 movies into two rows of 6
+  // Split 12 movies into two rows
   const row1 = currentMovies.slice(0, 6);
   const row2 = currentMovies.slice(6, 12);
 
-  // Listen for logout event to clear username
+  // Listen for logout event
   useEffect(() => {
     const handleReset = () => resetSearch();
     const handleLogoutEvent = () => setUsername("");
@@ -123,11 +132,13 @@ function Home() {
     <div style={{ padding: "20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2>{username ? `Welcome, ${username}` : "Welcome"}</h2>
-        <SearchBar placeholder="Search TMDB..." onSearch={handleSearch} onReset={resetSearch} />
+        <SearchBar placeholder="Search movies..." onSearch={handleSearch} onReset={resetSearch} />
       </div>
 
-      {/* Carousel with fade */}
-      {!searched && filteredMovies.length === 0 && (
+      {loading && <p style={{ marginTop: "20px" }}>Loading movies...</p>}
+
+      {/* Carousel */}
+      {!loading && !searched && filteredMovies.length === 0 && (
         <div style={{ opacity: fade ? 0 : 1, transition: "opacity 0.5s ease-in-out" }}>
           {[row1, row2].map((row, idx) => (
             <div

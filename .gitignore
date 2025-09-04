@@ -16,9 +16,12 @@ target/
 *.jar
 *.war
 backend/sign/target/
-backend/sign/src/main/resources/application.properties
+backend/sign/src/main/resources/application-secrets.properties
 
 #SQL
 *.sql
 *.db
 
+.vite/
+vite/deps/
+.vscode/

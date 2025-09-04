@@ -1,82 +1,108 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import SearchBar from "../components/SearchBar"; 
+import SearchBar from "../components/SearchBar";
 
 function Diary() {
-  const [movies, setMovies] = useState([]);
-  const [filteredMovies, setFilteredMovies] = useState([]);
+  const [diaryMovies, setDiaryMovies] = useState([]);
+  const [tmdbResults, setTmdbResults] = useState([]);
+  const [filteredDiary, setFilteredDiary] = useState([]);
+  const [filteredTmdb, setFilteredTmdb] = useState([]);
   const username = localStorage.getItem("username")?.trim();
   const navigate = useNavigate();
 
   // Fetch diary movies
-  const fetchMovies = async () => {
+  const fetchDiary = async () => {
     if (!username) return;
     try {
       const response = await axios.get(`http://localhost:8080/api/diary/${username}`);
-      setMovies(response.data);
-      setFilteredMovies(response.data); 
+      setDiaryMovies(response.data);
+      setFilteredDiary(response.data);
     } catch (error) {
       console.error("Error fetching diary movies:", error);
     }
   };
 
   useEffect(() => {
-    fetchMovies();
+    fetchDiary();
   }, [username]);
 
-  // Live search handler
-  const handleSearch = (query) => {
+  // Fetch TMDb search results
+  const fetchTmdb = async (query) => {
     if (!query.trim()) {
-      setFilteredMovies([...movies]); 
+      setFilteredTmdb([]);
       return;
     }
+    try {
+      const response = await axios.get(`http://localhost:8080/api/movies/search`, {
+        params: { query },
+      });
+      const safeResults = response.data.results.filter(movie => !movie.adult);
+      setTmdbResults(safeResults);
+      setFilteredTmdb(safeResults);
+    } catch (error) {
+      console.error("Error fetching TMDb movies:", error);
+      setFilteredTmdb([]);
+    }
+  };
+
+  // Combined live search
+  const handleSearch = (query) => {
     const lowerQuery = query.toLowerCase();
-    setFilteredMovies(
-      movies.filter((movie) =>
+
+    // Filter diary movies
+    setFilteredDiary(
+      diaryMovies.filter((movie) =>
         movie.movieTitle.toLowerCase().includes(lowerQuery)
       )
     );
+
+    // Fetch TMDb movies
+    fetchTmdb(query);
   };
 
-  if (!username) return null; 
+  if (!username) return <p>Please login to see your diary.</p>;
 
   const handleMovieClick = (movie) => {
-    navigate(`/movie/${movie.tmdbId}`);
+    navigate(`/movie/${movie.tmdbId || movie.id}`);
   };
 
   return (
     <div style={{ padding: "20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2 style={{ marginBottom: "15px" }}>{username}'s Diary</h2>
+        <h2 style={{ marginBottom: "15px" }}>{username}'s Diary </h2>
         <SearchBar
-          placeholder="Search in diary..."
+          placeholder="Search diary"
           onSearch={handleSearch}
-          onReset={() => setFilteredMovies([...movies])}
+          onReset={() => {
+            setFilteredDiary([...diaryMovies]);
+            setFilteredTmdb([]);
+          }}
         />
       </div>
 
-      {filteredMovies.length === 0 ? (
-        <p>No movies found.</p>
+      <h3>Diary Movies</h3>
+      {filteredDiary.length === 0 ? (
+        <p>No diary movies found.</p>
       ) : (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", marginTop: "15px" }}>
-          {filteredMovies.map((movie) => (
+          {filteredDiary.map((movie) => (
             <div
               key={movie.id}
-              className="movie-card" 
+              className="movie-card"
               onClick={() => handleMovieClick(movie)}
               style={{
                 width: "200px",
                 textAlign: "center",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
+                aliagnItems: "center",
                 gap: "5px",
                 cursor: "pointer"
               }}
             >
               <img
-                src={movie.posterUrl}
+                src={movie.posterUrl || "https://via.placeholder.com/200x300?text=No+Image"}
                 alt={movie.movieTitle}
                 style={{
                   width: "200px",
@@ -96,6 +122,9 @@ function Diary() {
           ))}
         </div>
       )}
+
+     
+          
     </div>
   );
 }

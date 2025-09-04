@@ -8,10 +8,11 @@ function Watchlist() {
   const [filteredMovies, setFilteredMovies] = useState([]);
   const username = localStorage.getItem("username")?.trim();
 
-  // Fetch movies
+  // Fetch movies from backend
   const fetchMovies = async () => {
     if (!username) return;
     try {
+      // Fetch user's watchlist from your Spring Boot backend
       const response = await axios.get(`http://localhost:8080/api/watchlist/${username}`);
       setMovies(response.data);
       setFilteredMovies(response.data); 
@@ -28,6 +29,7 @@ function Watchlist() {
 
   const handleRemove = async (movieId) => {
     try {
+      // Remove movie via backend
       await axios.delete(`http://localhost:8080/api/watchlist/${movieId}`);
       fetchMovies(); 
     } catch (error) {

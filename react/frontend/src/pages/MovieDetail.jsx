@@ -4,8 +4,6 @@ import axios from 'axios';
 import AddToDiary from '../components/AddToDiary';
 import AddToWatchlist from '../components/AddtoWatchlist';
 
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-
 function MovieDetail() {
   const { id } = useParams();
   const [movie, setMovie] = useState(null);
@@ -16,11 +14,13 @@ function MovieDetail() {
   const username = localStorage.getItem('username') || 'Anonymous';
 
   useEffect(() => {
-    axios.get(`https://api.themoviedb.org/3/movie/${id}`, { params: { api_key: API_KEY } })
+    // Fetch movie details from backend
+    axios.get(`http://localhost:8080/api/movies/${id}`)
       .then(res => setMovie(res.data))
       .catch(console.error);
 
-    axios.get(`https://api.themoviedb.org/3/movie/${id}/credits`, { params: { api_key: API_KEY } })
+    // Fetch movie credits (directors) from backend
+    axios.get(`http://localhost:8080/api/movies/${id}/credits`)
       .then(res => {
         const directorList = res.data.crew
           .filter(member => member.job === 'Director')
@@ -29,6 +29,7 @@ function MovieDetail() {
       })
       .catch(console.error);
 
+    // Fetch reviews from backend
     axios.get(`http://localhost:8080/api/reviews/${id}`, { withCredentials: true })
       .then(res => setReviews(res.data))
       .catch(console.error);
@@ -101,7 +102,7 @@ function MovieDetail() {
       <div style={{ flex: 1.2, minWidth: '300px' }}>
         <h2>{movie.title}</h2>
         <img
-          src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+          src={movie.poster_path || movie.posterUrl ? `https://image.tmdb.org/t/p/w300${movie.poster_path || movie.posterUrl}` : "https://via.placeholder.com/300x450?text=No+Image"}
           alt={movie.title}
           height='300'
           width='300'
@@ -128,7 +129,6 @@ function MovieDetail() {
       }}>
         <h3>Reviews</h3>
 
-        
         {reviews.length === 0 && <p>No reviews yet.</p>}
         {reviews.map(r => (
           <div key={r.id} style={{ marginBottom: '15px', wordWrap: 'break-word' }}>
@@ -138,12 +138,7 @@ function MovieDetail() {
 
         {/* Current User Review */}
         {username !== 'Anonymous' && (
-          <div style={{
-            marginTop: '20px',
-            padding: '10px',
- 
-           
-          }}>
+          <div style={{ marginTop: '20px', padding: '10px' }}>
             {userReview && !editing && (
               <>
                 <strong>Your review:</strong>
