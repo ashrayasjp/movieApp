@@ -1,4 +1,4 @@
-## REACT FRONTEND
+## React Frontend
 cd movieApp/react/frontend
 ## Install dependencies
 npm install
