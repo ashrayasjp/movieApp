@@ -45,7 +45,7 @@ function Header() {
     navigate("/home");
   };
 
-  // Function to handle link clicks and reset search
+ 
   const handleLinkClick = (event, resetEventName, path) => {
     window.dispatchEvent(new CustomEvent(resetEventName));
     if (window.location.pathname === path) {

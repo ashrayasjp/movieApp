@@ -27,7 +27,7 @@ function Diary() {
     fetchDiary();
   }, [username]);
 
-  // Fetch TMDb search results
+ 
   const fetchTmdb = async (query) => {
     if (!query.trim()) {
       setFilteredTmdb([]);
@@ -46,7 +46,7 @@ function Diary() {
     }
   };
 
-  // Combined live search
+
   const handleSearch = (query) => {
     const lowerQuery = query.toLowerCase();
 

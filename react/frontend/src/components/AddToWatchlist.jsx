@@ -20,7 +20,7 @@ function AddToWatchlist({ movie, onAdded }) {
         username,
       });
       alert("Movie added to watchlist");
-      if (onAdded) onAdded(); // refresh parent component
+      if (onAdded) onAdded(); 
     } catch (err) {
       console.error("Error adding movie:", err);
       alert(err.response?.data || "Movie could not be added.");

@@ -52,7 +52,7 @@ function Watchlist() {
     );
   };
 
-  // Reset handler when search bar closes
+  
   const handleReset = () => {
     setFilteredMovies([...movies]);
   };

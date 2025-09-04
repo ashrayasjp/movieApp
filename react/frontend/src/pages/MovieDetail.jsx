@@ -19,7 +19,7 @@ function MovieDetail() {
       .then(res => setMovie(res.data))
       .catch(console.error);
 
-    // Fetch movie credits (directors) from backend
+    
     axios.get(`http://localhost:8080/api/movies/${id}/credits`)
       .then(res => {
         const directorList = res.data.crew
@@ -29,7 +29,6 @@ function MovieDetail() {
       })
       .catch(console.error);
 
-    // Fetch reviews from backend
     axios.get(`http://localhost:8080/api/reviews/${id}`, { withCredentials: true })
       .then(res => setReviews(res.data))
       .catch(console.error);
