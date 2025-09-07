@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
+import { UserContext } from "../components/UserContext";
 
 function Home() {
-  const [username, setUsername] = useState(localStorage.getItem("username") || "");
+  const { user, setUser } = useContext(UserContext); // use UserContext
+  const username = user?.username;
   const [topMovies, setTopMovies] = useState([]);
   const [currentMovies, setCurrentMovies] = useState([]);
   const [fadeInIndex, setFadeInIndex] = useState(-1);
@@ -14,7 +16,6 @@ function Home() {
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
-
 
   const fetchTopMovies = async () => {
     try {
@@ -44,7 +45,6 @@ function Home() {
     fetchTopMovies();
   }, []);
 
- 
   useEffect(() => {
     if (!topMovies.length) return;
 
@@ -59,7 +59,6 @@ function Home() {
       setFadeInIndex(-1);
       setFadeOut(false);
 
-    
       let index = 0;
       const fadeInterval = setInterval(() => {
         setFadeInIndex(index);
@@ -67,13 +66,12 @@ function Home() {
         if (index >= nextMovies.length) clearInterval(fadeInterval);
       }, 200);
 
-     
       setTimeout(() => {
         setFadeOut(true);
         setTimeout(() => {
           startIndex = (startIndex + 12) % topMovies.length;
           showNextSet();
-        }, 500); 
+        }, 500);
       }, 5000 + nextMovies.length * 200);
     };
 
@@ -118,8 +116,7 @@ function Home() {
   const handleMovieClick = (movie) => navigate(`/movie/${movie.id}`);
 
   const handleLogout = () => {
-    localStorage.removeItem("username");
-    setUsername("");
+    setUser(null); // clear user in context
     window.dispatchEvent(new Event("userAuthChange"));
   };
 
@@ -128,7 +125,7 @@ function Home() {
 
   useEffect(() => {
     const handleReset = () => resetSearch();
-    const handleLogoutEvent = () => setUsername("");
+    const handleLogoutEvent = () => setUser(null);
 
     window.addEventListener("resetHomeSearch", handleReset);
     window.addEventListener("userAuthChange", handleLogoutEvent);
@@ -137,18 +134,18 @@ function Home() {
       window.removeEventListener("resetHomeSearch", handleReset);
       window.removeEventListener("userAuthChange", handleLogoutEvent);
     };
-  }, []);
+  }, [setUser]);
 
   return (
     <div style={{ padding: "20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2>
           {username ? `Welcome, ${username}` : "Welcome"}{" "}
-          
         </h2>
         <SearchBar placeholder="Search movies..." onSearch={handleSearch} onReset={resetSearch} />
       </div>
 
+     
       {loading && <p style={{ marginTop: "20px" }}>Loading movies...</p>}
 
       {/* Carousel */}

@@ -1,17 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
+import { UserContext } from "../components/UserContext";
 
 function Diary() {
+  const { user } = useContext(UserContext);
+  const username = user?.username;
+  const navigate = useNavigate();
+
   const [diaryMovies, setDiaryMovies] = useState([]);
   const [tmdbResults, setTmdbResults] = useState([]);
   const [filteredDiary, setFilteredDiary] = useState([]);
   const [filteredTmdb, setFilteredTmdb] = useState([]);
-  const username = localStorage.getItem("username")?.trim();
-  const navigate = useNavigate();
+  const [loadingUser, setLoadingUser] = useState(true); // NEW
 
-  // Fetch diary movies
+  // Wait for user context to be loaded
+  useEffect(() => {
+    if (user === undefined) return; // still loading
+    setLoadingUser(false); // user is now loaded (could be null)
+    if (username) fetchDiary();
+  }, [user]);
+
   const fetchDiary = async () => {
     if (!username) return;
     try {
@@ -23,11 +33,13 @@ function Diary() {
     }
   };
 
+  // Update when likedMovies changes
   useEffect(() => {
-    fetchDiary();
-  }, [username]);
+    const handleLikedUpdate = () => setFilteredDiary([...diaryMovies]);
+    window.addEventListener('likedMoviesUpdated', handleLikedUpdate);
+    return () => window.removeEventListener('likedMoviesUpdated', handleLikedUpdate);
+  }, [diaryMovies]);
 
- 
   const fetchTmdb = async (query) => {
     if (!query.trim()) {
       setFilteredTmdb([]);
@@ -46,31 +58,27 @@ function Diary() {
     }
   };
 
-
   const handleSearch = (query) => {
     const lowerQuery = query.toLowerCase();
-
-    // Filter diary movies
     setFilteredDiary(
       diaryMovies.filter((movie) =>
         movie.movieTitle.toLowerCase().includes(lowerQuery)
       )
     );
-
-    // Fetch TMDb movies
     fetchTmdb(query);
   };
-
-  if (!username) return <p>Please login to see your diary.</p>;
 
   const handleMovieClick = (movie) => {
     navigate(`/movie/${movie.tmdbId || movie.id}`);
   };
 
+  if (loadingUser) return <p>Loading...</p>; // wait for user to load
+  if (!username) return <p>Please login to see your diary.</p>;
+
   return (
     <div style={{ padding: "20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2 style={{ marginBottom: "15px" }}>{username}'s Diary </h2>
+        <h2 style={{ marginBottom: "15px" }}>{username}'s Diary</h2>
         <SearchBar
           placeholder="Search diary"
           onSearch={handleSearch}
@@ -80,53 +88,93 @@ function Diary() {
           }}
         />
       </div>
-
-      <h3>Diary Movies</h3>
       {filteredDiary.length === 0 ? (
         <p>No diary movies found.</p>
       ) : (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", marginTop: "15px" }}>
-          {filteredDiary.map((movie) => (
-            <div
-              key={movie.id}
-              className="movie-card"
-              onClick={() => handleMovieClick(movie)}
-              style={{
-                width: "200px",
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                aliagnItems: "center",
-                gap: "5px",
-                cursor: "pointer"
-              }}
-            >
-              <img
-                src={movie.posterUrl || "https://via.placeholder.com/200x300?text=No+Image"}
-                alt={movie.movieTitle}
+          {filteredDiary.map((movie) => {
+            const likedMovies = JSON.parse(localStorage.getItem(`${username}_liked`) || "[]");
+            const isLiked = likedMovies.includes(String(movie.tmdbId));
+
+            return (
+              <div
+                key={movie.id}
+                className="movie-card"
+                onClick={() => handleMovieClick(movie)}
                 style={{
                   width: "200px",
-                  height: "300px",
-                  objectFit: "cover",
-                  border: "2px solid black",
-                  borderRadius: "8px",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "5px",
+                  cursor: "pointer"
                 }}
-              />
-              <h3 style={{ margin: "5px 0", fontSize: "16px", lineHeight: "1.2" }}>
-                {movie.movieTitle}
-              </h3>
-              <h4 style={{ margin: "0", fontSize: "14px", color: "#555" }}>
-                Added: {movie.addedDate}
-              </h4>
-            </div>
-          ))}
+              >
+                <img
+                  src={movie.posterUrl || "https://via.placeholder.com/200x300?text=No+Image"}
+                  alt={movie.movieTitle}
+                  style={{
+                    width: "200px",
+                    height: "300px",
+                    objectFit: "cover",
+                    border: "2px solid black",
+                    borderRadius: "8px",
+                  }}
+                />
+                <h3 style={{ margin: "5px 0", fontSize: "16px", lineHeight: "1.2" }}>
+                  {movie.movieTitle} {isLiked && "❤️"}
+                </h3>
+                <h4 style={{ marginTop: "2px", fontSize: "14px", color: "#555" }}>
+                  Added: {movie.addedDate}
+                </h4>
+              </div>
+            );
+          })}
         </div>
       )}
 
-     
-          
+      {filteredTmdb.length > 0 && (
+        <>
+          <h3 style={{ marginTop: "30px" }}>TMDb Search Results</h3>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", marginTop: "15px" }}>
+            {filteredTmdb.map((movie) => (
+              <div
+                key={movie.id}
+                className="movie-card"
+                onClick={() => handleMovieClick(movie)}
+                style={{
+                  width: "200px",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "5px",
+                  cursor: "pointer"
+                }}
+              >
+                <img
+                  src={movie.poster_path ? `https://image.tmdb.org/t/p/w300${movie.poster_path}` : "https://via.placeholder.com/200x300?text=No+Image"}
+                  alt={movie.title}
+                  style={{
+                    width: "200px",
+                    height: "300px",
+                    objectFit: "cover",
+                    border: "2px solid black",
+                    borderRadius: "8px",
+                  }}
+                />
+                <h3 style={{ margin: "5px 0", fontSize: "16px", lineHeight: "1.2" }}>
+                  {movie.title}
+                </h3>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 export default Diary;
+

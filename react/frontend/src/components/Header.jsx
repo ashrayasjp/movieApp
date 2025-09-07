@@ -1,56 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useUser } from "./UserContext";
 
 function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    localStorage.getItem("username") !== null
-  );
-
+  const { user, logout } = useUser();
   const navigate = useNavigate();
 
-  // Listen for login/logout changes 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setIsLoggedIn(localStorage.getItem("username") !== null);
-    };
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsLoggedIn(localStorage.getItem("username") !== null);
-    }, 100);
-    return () => clearInterval(interval);
-  }, []);
-
   const handleLogout = async () => {
-    try {
-      await axios.post(
-        "http://localhost:8080/api/users/logout",
-        {},
-        { withCredentials: true }
-      );
-    } catch (err) {
-      console.error("Logout API failed:", err);
-    }
-
-    localStorage.removeItem("username");
-    window.dispatchEvent(new Event("userAuthChange"));
-    setIsLoggedIn(false);
+    await logout();
     navigate("/home");
   };
 
- 
-  const handleLinkClick = (event, resetEventName, path) => {
+  const handleLinkClick = (resetEventName, path) => {
     window.dispatchEvent(new CustomEvent(resetEventName));
-    if (window.location.pathname === path) {
-      window.location.href = path; 
-    }
+    if (window.location.pathname === path) window.location.href = path;
   };
 
   return (
@@ -61,52 +24,32 @@ function Header() {
 
       <ul className="nav-links">
         <li>
-          <Link
-            to="/home"
-            onClick={(e) => handleLinkClick(e, "resetHomeSearch", "/home")}
-          >
+          <Link to="/home" onClick={() => handleLinkClick("resetHomeSearch", "/home")}>
             Home
           </Link>
         </li>
 
-        {isLoggedIn ? (
+        {user ? (
           <>
             <li>
-              <Link
-                to="/diary"
-                onClick={(e) => handleLinkClick(e, "resetDiarySearch", "/diary")}
-              >
+              <Link to="/diary" onClick={() => handleLinkClick("resetDiarySearch", "/diary")}>
                 Diary
               </Link>
             </li>
             <li>
-              <Link
-                to="/watchlist"
-                onClick={(e) =>
-                  handleLinkClick(e, "resetWatchlistSearch", "/watchlist")
-                }
-              >
+              <Link to="/watchlist" onClick={() => handleLinkClick("resetWatchlistSearch", "/watchlist")}>
                 Watchlist
               </Link>
             </li>
             <li>
-              <span
-                onClick={handleLogout}
-                className="nav-link"
-                style={{ cursor: "pointer" }}
-              >
+              <span onClick={handleLogout} style={{ cursor: "pointer" , fontSize:'20px' }}>
                 Logout
               </span>
             </li>
           </>
         ) : (
           <li>
-            <Link to="/login"   
-             onClick={() => {
-              if (window.location.pathname === "/login") {
-                window.location.href = "/login"; 
-              }
-            }}>Login</Link>
+            <Link to="/login">Login</Link>
           </li>
         )}
       </ul>

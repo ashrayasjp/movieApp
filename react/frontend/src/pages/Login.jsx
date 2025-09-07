@@ -1,21 +1,20 @@
-import { useNavigate } from 'react-router-dom'
-import { Link } from 'react-router-dom'
-import axios from 'axios'
-import Home from './Home.jsx'
-import Signup from './Signup.jsx'
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
+import { useUser } from '../components/UserContext';
 
 function Login() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const { setUser } = useUser();
 
   const handleLogin = async (e) => {
-    e.preventDefault()
-    const form = e.target
-    const email = form.email.value.trim()
-    const password = form.password.value.trim()
+    e.preventDefault();
+    const form = e.target;
+    const email = form.email.value.trim();
+    const password = form.password.value.trim();
 
     if (!email || !password) {
-      alert("Fill all fields")
-      return
+      alert("Fill all fields");
+      return;
     }
 
     try {
@@ -23,22 +22,21 @@ function Login() {
         'http://localhost:8080/api/users/login',
         { email, password },
         { withCredentials: true }
-      )
+      );
 
-      const { username, email: uemail } = response.data
+      const loggedInUser = response.data.user;
+      if (!loggedInUser) throw new Error("Invalid login response");
 
-      localStorage.setItem('username', username)  
-      localStorage.setItem('email', uemail)       
+      setUser(loggedInUser); // update context
+      window.dispatchEvent(new Event("userAuthChange")); // update header/diary/watchlist
 
-      alert("Login successful!")
-      navigate('/home')
-      window.dispatchEvent(new Event('userAuthChange'))
-
+      alert("Login successful!");
+      navigate('/home');
     } catch (error) {
-      alert(error.response?.data?.error || "Error occurred during login")
-      console.error(error)
+      alert(error.response?.data?.error || "Login failed");
+      console.error(error);
     }
-  }
+  };
 
   return (
     <div>
@@ -51,10 +49,9 @@ function Login() {
         <button type="submit">Submit</button>
       </form>
       <br />
-      Don’t have an account? <Link to="/Signup">Signup</Link>
+      Don’t have an account? <Link to="/signup">Signup</Link>
     </div>
-  )
+  );
 }
 
-
-export default Login
+export default Login;

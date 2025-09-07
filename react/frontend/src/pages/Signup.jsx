@@ -1,53 +1,59 @@
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { useUser } from '../components/UserContext';
+import { useState } from 'react';
 
 function Signup() {
   const navigate = useNavigate();
+  const { setUser } = useUser();
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleSignup = async (e) => {
     e.preventDefault();
     const form = e.target;
     const username = form.username.value.trim();
+    const email = form.email.value.trim();
     const password = form.password.value.trim();
-    const confirmpassword = form.confirmpassword.value.trim();
-    const email = form.email.value.trim(); 
 
-    if (!username || !password || !confirmpassword || !email) {
-      alert("Fill all required fields");
+    if (!username || !email || !password || !confirmPassword) {
+      alert("Fill all fields");
       return;
     }
 
-    if (password.length < 6) {
-      alert("Password must be at least 6 characters");
-      return;
-    }
-
-    if (password !== confirmpassword) {
+    if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
     }
 
     try {
-      const response = await axios.post(
+      // 1. Signup
+      await axios.post(
         'http://localhost:8080/api/users/signup',
-        { username, password, email },  
+        { username, email, password },
         { withCredentials: true }
       );
 
-      // Store both username and email in localStorage
-      const { username: uname, email: uemail } = response.data;
-      localStorage.setItem('username', uname);
-      localStorage.setItem('email', uemail);
+      // 2. Auto-login
+      const loginResponse = await axios.post(
+        'http://localhost:8080/api/users/login',
+        { email, password },
+        { withCredentials: true }
+      );
 
-      alert("Signup successful!");
-      navigate('/home');
+      const loggedInUser = loginResponse.data.user;
+      if (!loggedInUser) throw new Error("Login failed after signup");
 
-    
-      window.dispatchEvent(new Event('userAuthChange'));
+      // 3. Set user in context and localStorage
+      setUser(loggedInUser);
+      localStorage.setItem("username", loggedInUser.username);
 
+      // 4. Notify other components (like header, diary, watchlist)
+      window.dispatchEvent(new Event("userAuthChange"));
+
+      alert("Signup & Login successful!");
+      navigate('/home'); // redirect to home
     } catch (error) {
-      alert(error.response?.data?.error || "Error occurred during signup");
+      alert(error.response?.data?.error || "Error occurred during signup/login");
       console.error(error);
     }
   };
@@ -56,14 +62,16 @@ function Signup() {
     <div>
       <h1>Signup Page</h1>
       <form onSubmit={handleSignup}>
-        Username <input type="text" name="username" required />
-        <br /><br />
-        Email <input type="email" name="email" required />
-        <br /><br />
-        Password <input type="password" name="password" required />
-        <br /><br />
-        Confirm Password <input type="password" name="confirmpassword" required />
-        <br /><br />
+        Username: <input type="text" name="username" required /><br /><br />
+        Email: <input type="email" name="email" required /><br /><br />
+        Password: <input type="password" name="password" required /><br /><br />
+        Confirm Password: 
+        <input
+          type="password"
+          value={confirmPassword}
+          onChange={e => setConfirmPassword(e.target.value)}
+          required
+        /><br /><br />
         <button type="submit">Submit</button>
       </form>
       <br />
