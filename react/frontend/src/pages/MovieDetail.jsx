@@ -42,7 +42,7 @@ function MovieDetail() {
       .catch(console.error);
   };
 
-  // Check if current user liked the movie
+  
   const checkUserLiked = () => {
     if (!username) return setLiked(false);
     const likedMovies = JSON.parse(localStorage.getItem(`${username}_liked`) || "[]");

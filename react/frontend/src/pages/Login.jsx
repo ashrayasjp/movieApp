@@ -27,8 +27,8 @@ function Login() {
       const loggedInUser = response.data.user;
       if (!loggedInUser) throw new Error("Invalid login response");
 
-      setUser(loggedInUser); // update context
-      window.dispatchEvent(new Event("userAuthChange")); // update header/diary/watchlist
+      setUser(loggedInUser); 
+      window.dispatchEvent(new Event("userAuthChange")); 
 
       alert("Login successful!");
       navigate('/home');
