@@ -12,11 +12,13 @@ import Diary from "./pages/Diary.jsx";
 import Watchlist from "./pages/Watchlist.jsx";
 import Header from "./components/Header.jsx";
 import { UserProvider } from './components/UserContext';
+import { LikesProvider } from "./components/LikesContext";
 import { useUser } from './components/UserContext';
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <UserProvider>
+      <LikesProvider>
       <BrowserRouter>
         <Header />
         <Routes>
@@ -29,6 +31,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/watchlist" element={<Watchlist />} />
         </Routes>
       </BrowserRouter>
+      </LikesProvider>
     </UserProvider>
   </StrictMode>
 );

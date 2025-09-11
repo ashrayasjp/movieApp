@@ -1,6 +1,6 @@
 import React from "react";
 import axios from "axios";
-import { useUser } from "../components/UserContext"; // adjust path if needed
+import { useUser } from "../components/UserContext"; 
 
 function AddToDiary({ movie, onAdded }) {
   const { user } = useUser();

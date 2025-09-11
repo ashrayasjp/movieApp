@@ -43,6 +43,17 @@ public class ReviewController {
         return ResponseEntity.ok("Review deleted successfully.");
     }
 
+    // DELETE all reviews for a specific movie
+    @DeleteMapping("/movie/{movieId}/clear")
+    public ResponseEntity<?> clearReviews(@PathVariable Long movieId) {
+        List<UserReview> reviews = reviewRepository.findByMovieId(movieId);
+        if (reviews.isEmpty()) {
+            return ResponseEntity.status(404).body("No reviews found for this movie.");
+        }
+        reviewRepository.deleteAll(reviews);
+        return ResponseEntity.ok("All reviews cleared for movie ID " + movieId);
+    }
+
     @PutMapping("/{movieId}/{reviewId}")
     public ResponseEntity<?> updateReview(
             @PathVariable Long movieId,

@@ -13,12 +13,12 @@ function Diary() {
   const [tmdbResults, setTmdbResults] = useState([]);
   const [filteredDiary, setFilteredDiary] = useState([]);
   const [filteredTmdb, setFilteredTmdb] = useState([]);
-  const [loadingUser, setLoadingUser] = useState(true); // NEW
+  const [loadingUser, setLoadingUser] = useState(true); 
 
-  // Wait for user context to be loaded
+
   useEffect(() => {
-    if (user === undefined) return; // still loading
-    setLoadingUser(false); // user is now loaded (could be null)
+    if (user === undefined) return; 
+    setLoadingUser(false); 
     if (username) fetchDiary();
   }, [user]);
 
@@ -33,7 +33,6 @@ function Diary() {
     }
   };
 
-  // Update when likedMovies changes
   useEffect(() => {
     const handleLikedUpdate = () => setFilteredDiary([...diaryMovies]);
     window.addEventListener('likedMoviesUpdated', handleLikedUpdate);
@@ -72,7 +71,7 @@ function Diary() {
     navigate(`/movie/${movie.tmdbId || movie.id}`);
   };
 
-  if (loadingUser) return <p>Loading...</p>; // wait for user to load
+  if (loadingUser) return <p>Loading...</p>; 
   if (!username) return <p>Please login to see your diary.</p>;
 
   return (
@@ -91,7 +90,7 @@ function Diary() {
       {filteredDiary.length === 0 ? (
         <p>No diary movies found.</p>
       ) : (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", marginTop: "15px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "40px", marginTop: "15px" }}>
           {filteredDiary.map((movie) => {
             const likedMovies = JSON.parse(localStorage.getItem(`${username}_liked`) || "[]");
             const isLiked = likedMovies.includes(String(movie.tmdbId));
@@ -108,7 +107,8 @@ function Diary() {
                   flexDirection: "column",
                   alignItems: "center",
                   gap: "5px",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  marginBottom: '0px',
                 }}
               >
                 <img
@@ -120,12 +120,13 @@ function Diary() {
                     objectFit: "cover",
                     border: "2px solid black",
                     borderRadius: "8px",
+                   
                   }}
                 />
                 <h3 style={{ margin: "5px 0", fontSize: "16px", lineHeight: "1.2" }}>
                   {movie.movieTitle} {isLiked && "❤️"}
                 </h3>
-                <h4 style={{ marginTop: "2px", fontSize: "14px", color: "#555" }}>
+                <h4 style={{ marginTop: "0px", fontSize: "14px", color: "#555" }}>
                   Added: {movie.addedDate}
                 </h4>
               </div>

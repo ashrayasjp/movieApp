@@ -17,15 +17,14 @@ function MovieDetail() {
   const [newReview, setNewReview] = useState('');
   const [editing, setEditing] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [similarMovies, setSimilarMovies] = useState([]);
 
-  useEffect(() => {
-    // Fetch movie details
-    axios.get(`http://localhost:8080/api/movies/${id}`)
+  const fetchMovieData = (movieId) => {
+    axios.get(`http://localhost:8080/api/movies/${movieId}`)
       .then(res => setMovie(res.data))
       .catch(console.error);
 
-    // Fetch directors
-    axios.get(`http://localhost:8080/api/movies/${id}/credits`)
+    axios.get(`http://localhost:8080/api/movies/${movieId}/credits`)
       .then(res => {
         const directorList = res.data.crew
           .filter(member => member.job === 'Director')
@@ -34,17 +33,28 @@ function MovieDetail() {
       })
       .catch(console.error);
 
-    // Fetch reviews
-    axios.get(`http://localhost:8080/api/reviews/${id}`, { withCredentials: true })
+    axios.get(`http://localhost:8080/api/reviews/${movieId}`, { withCredentials: true })
       .then(res => setReviews(res.data))
       .catch(console.error);
-    if (username) {
-      const likedMovies = JSON.parse(localStorage.getItem(`${username}_liked`) || "[]");
-      setLiked(likedMovies.includes(String(id)));
-    }
+
+    axios.get(`http://localhost:8080/api/movies/${movieId}/similar`)
+      .then(res => setSimilarMovies(res.data.slice(0, 10)))
+      .catch(console.error);
+  };
+
+  // Check if current user liked the movie
+  const checkUserLiked = () => {
+    if (!username) return setLiked(false);
+    const likedMovies = JSON.parse(localStorage.getItem(`${username}_liked`) || "[]");
+    setLiked(likedMovies.includes(String(id)));
+  };
+
+  useEffect(() => {
+    fetchMovieData(id);
+    checkUserLiked();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id, username]);
 
-  // Animate director fade-in
   useEffect(() => {
     if (directors.length > 0) {
       const timer = setTimeout(() => setDirectorVisible(true), 200);
@@ -52,19 +62,18 @@ function MovieDetail() {
     }
   }, [directors]);
 
+
   const handleToggleLike = () => {
     if (!username) return alert("Please log in to like movies.");
     let likedMovies = JSON.parse(localStorage.getItem(`${username}_liked`) || "[]");
-    if (liked) {
-      likedMovies = likedMovies.filter(movieId => movieId !== String(id));
-    } else {
-      likedMovies.push(String(id));
-    }
+    if (liked) likedMovies = likedMovies.filter(movieId => movieId !== String(id));
+    else likedMovies.push(String(id));
     localStorage.setItem(`${username}_liked`, JSON.stringify(likedMovies));
     setLiked(!liked);
-    window.dispatchEvent(new Event('likedMoviesUpdated'));
+    window.dispatchEvent(new Event('likedMoviesUpdated')); 
   };
 
+  // Reviews
   const handleAddReview = async () => {
     if (!newReview.trim()) return;
     try {
@@ -75,9 +84,7 @@ function MovieDetail() {
       );
       setReviews([...reviews, res.data]);
       setNewReview('');
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const handleEditReview = async () => {
@@ -92,9 +99,7 @@ function MovieDetail() {
       setReviews(reviews.map(r => r.id === userReview.id ? res.data : r));
       setEditing(false);
       setNewReview('');
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const handleDeleteReview = async () => {
@@ -108,13 +113,10 @@ function MovieDetail() {
       setReviews(reviews.filter(r => r.id !== userReview.id));
       setNewReview('');
       setEditing(false);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   if (!movie) return <p>Loading...</p>;
-
   const userReview = reviews.find(r => r.username === username);
 
   return (
@@ -132,24 +134,22 @@ function MovieDetail() {
         <p>Release Date: {movie.release_date}</p>
         <p>Rating: {movie.vote_average}</p>
 
-      {/* Animated Directors */}
-{directors.length > 0 && (
-  <p
-    style={{
-      opacity: directorVisible ? 1 : 0,
-      transform: directorVisible ? 'translateY(0)' : 'translateY(10px)',
-      transition: 'opacity 0.8s ease, transform 0.8s ease',
-      fontWeight: '600',
-      fontSize: '18px',
-      marginTop: '10px',
-      color: ' green',
-    }}
-  >
-    Director{directors.length > 1 ? 's' : ''}: {directors.join(', ')}
-  </p>
-)}
+        {directors.length > 0 && (
+          <p
+            style={{
+              opacity: directorVisible ? 1 : 0,
+              transform: directorVisible ? 'translateY(0)' : 'translateY(10px)',
+              transition: 'opacity 0.8s ease, transform 0.8s ease',
+              fontWeight: '600',
+              fontSize: '18px',
+              marginTop: '10px',
+              color: 'green',
+            }}
+          >
+            Director{directors.length > 1 ? 's' : ''}: {directors.join(', ')}
+          </p>
+        )}
 
-        {/* Like button */}
         {username && (
           <button
             onClick={handleToggleLike}
@@ -175,9 +175,29 @@ function MovieDetail() {
         <AddToDiary movie={movie} />
         <br /><br />
         <AddToWatchlist movie={movie} />
+        
+        {similarMovies.length > 0 && (
+          <div style={{ marginTop: '30px' }}>
+            <h3>Similar Movies</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '40px' }}>
+              {similarMovies.map(sm => (
+                <div
+                  key={sm.id}
+                  style={{ width: '160px', textAlign: 'center', cursor: 'pointer' }}
+                  onClick={() => (window.location.href = `/movie/${sm.id}`)}
+                >
+                  <img
+                    src={sm.poster_path ? `https://image.tmdb.org/t/p/w300${sm.poster_path}` : "https://via.placeholder.com/200x225?text=No+Image"}
+                    alt={sm.title}
+                    style={{ width: '100%', borderRadius: '8px' ,  margin: '0px', }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Reviews */}
       <div className="review-section" style={{ flex: 1, minWidth: '300px', borderLeft: '1px solid #ccc', padding: '20px', display: 'flex', flexDirection: 'column', maxHeight: '600px', overflowY: 'auto' }}>
         <h3>Reviews</h3>
         {reviews.length === 0 && <p>No reviews yet.</p>}

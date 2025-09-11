@@ -55,7 +55,6 @@ public class MovieController {
         }
     }
 
-    // Get movie details by TMDB ID
     @GetMapping("/{id}")
     public Map<String, Object> getMovieById(@PathVariable String id) {
         try {
@@ -79,6 +78,23 @@ public class MovieController {
         } catch (Exception e) {
             e.printStackTrace();
             return Map.of();
+        }
+    }
+
+    @GetMapping("/{id}/similar")
+    public List<Map<String, Object>> getSimilarMovies(@PathVariable String id,
+            @RequestParam(defaultValue = "1") int page) {
+        try {
+            String url = TMDB_BASE + "/movie/" + id + "/similar?api_key=" + apiKey + "&page=" + page;
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+            Map<String, Object> result = mapper.readValue(response.getBody(), new TypeReference<>() {
+            });
+            return mapper.convertValue(result.get("results"), new TypeReference<List<Map<String, Object>>>() {
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
         }
     }
 }

@@ -9,6 +9,7 @@ public interface UserReviewRepository extends JpaRepository<UserReview, Long> {
 
     List<UserReview> findByMovieId(Long movieId);
 
-    // To safely fetch a review by id and username
     Optional<UserReview> findByIdAndUsername(Long id, String username);
+
+    void deleteByMovieId(Long movieId);
 }

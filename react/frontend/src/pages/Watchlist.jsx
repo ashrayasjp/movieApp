@@ -84,7 +84,7 @@ function Watchlist() {
       {filteredMovies.length === 0 ? (
         <p>No movies in watchlist.</p>
       ) : (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", marginTop: "15px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "40px", marginTop: "15px" }}>
           {filteredMovies.map((movie) => {
             const likedMovies = JSON.parse(localStorage.getItem(`${username}_liked`) || "[]");
             const isLiked = likedMovies.includes(movie.tmdbId);
