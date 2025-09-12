@@ -55,10 +55,55 @@ public class MovieController {
         }
     }
 
+    @GetMapping("/search/person")
+    public List<Map<String, Object>> searchPersons(@RequestParam String query) {
+        try {
+            String url = TMDB_BASE + "/search/person?api_key=" + apiKey + "&query=" + query;
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+            Map<String, Object> result = mapper.readValue(response.getBody(), new TypeReference<>() {
+            });
+            List<Map<String, Object>> people = mapper.convertValue(result.get("results"), new TypeReference<>() {
+            });
+            return people;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+
     @GetMapping("/{id}")
     public Map<String, Object> getMovieById(@PathVariable String id) {
         try {
             String url = TMDB_BASE + "/movie/" + id + "?api_key=" + apiKey;
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            return mapper.readValue(response.getBody(), new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Map.of();
+        }
+    }
+
+    @GetMapping("/person/{id}")
+    public Map<String, Object> getPersonById(@PathVariable String id) {
+        try {
+
+            String url = TMDB_BASE + "/person/" + id + "?api_key=" + apiKey + "&append_to_response=movie_credits";
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+            return mapper.readValue(response.getBody(), new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Map.of();
+        }
+    }
+
+    @GetMapping("/person/{id}/movies")
+    public Map<String, Object> getPersonMovies(@PathVariable String id) {
+        try {
+            String url = TMDB_BASE + "/person/" + id + "/movie_credits?api_key=" + apiKey;
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
             return mapper.readValue(response.getBody(), new TypeReference<>() {
             });

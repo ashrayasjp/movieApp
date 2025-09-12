@@ -17,7 +17,6 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
-    // Signup endpoint
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody User user, HttpSession session) {
         if (userRepository.existsByUsername(user.getUsername())) {
@@ -28,8 +27,6 @@ public class UserController {
         }
 
         userRepository.save(user);
-
-        // Store user in session immediately after signup
         session.setAttribute("user", user);
 
         return ResponseEntity.ok(Map.of(
@@ -48,7 +45,6 @@ public class UserController {
             return ResponseEntity.status(401).body(Map.of("error", "Incorrect password"));
         }
 
-        // Store user object in session
         session.setAttribute("user", dbUser);
 
         return ResponseEntity.ok(Map.of(

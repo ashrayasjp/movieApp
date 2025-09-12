@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AddToDiary from '../components/AddToDiary';
 import AddToWatchlist from '../components/AddToWatchlist';
@@ -7,12 +7,13 @@ import { useUser } from '../components/UserContext';
 
 function MovieDetail() {
   const { id } = useParams();
-  const { user } = useUser(); 
+  const { user } = useUser();
+  const navigate = useNavigate();
   const username = user?.username || null;
 
   const [movie, setMovie] = useState(null);
   const [directors, setDirectors] = useState([]);
-  const [directorVisible, setDirectorVisible] = useState(false); 
+  const [directorVisible, setDirectorVisible] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState('');
   const [editing, setEditing] = useState(false);
@@ -27,8 +28,8 @@ function MovieDetail() {
     axios.get(`http://localhost:8080/api/movies/${movieId}/credits`)
       .then(res => {
         const directorList = res.data.crew
-          .filter(member => member.job === 'Director')
-          .map(member => member.name);
+          .filter(member => member.job === 'Director' && member.id && member.name)
+          .map(member => ({ id: member.id, name: member.name }));
         setDirectors(directorList);
       })
       .catch(console.error);
@@ -38,11 +39,13 @@ function MovieDetail() {
       .catch(console.error);
 
     axios.get(`http://localhost:8080/api/movies/${movieId}/similar`)
-      .then(res => setSimilarMovies(res.data.slice(0, 10)))
+      .then(res => {
+        const filtered = res.data.filter(sm => sm.poster_path);
+        setSimilarMovies(filtered.slice(0, 10));
+      })
       .catch(console.error);
   };
 
-  
   const checkUserLiked = () => {
     if (!username) return setLiked(false);
     const likedMovies = JSON.parse(localStorage.getItem(`${username}_liked`) || "[]");
@@ -62,6 +65,10 @@ function MovieDetail() {
     }
   }, [directors]);
 
+  const handlePersonClick = (person, e) => {
+    e.stopPropagation();
+    navigate(`/person/${person.id}`);
+  };
 
   const handleToggleLike = () => {
     if (!username) return alert("Please log in to like movies.");
@@ -70,7 +77,7 @@ function MovieDetail() {
     else likedMovies.push(String(id));
     localStorage.setItem(`${username}_liked`, JSON.stringify(likedMovies));
     setLiked(!liked);
-    window.dispatchEvent(new Event('likedMoviesUpdated')); 
+    window.dispatchEvent(new Event('likedMoviesUpdated'));
   };
 
   // Reviews
@@ -135,19 +142,33 @@ function MovieDetail() {
         <p>Rating: {movie.vote_average}</p>
 
         {directors.length > 0 && (
-          <p
-            style={{
-              opacity: directorVisible ? 1 : 0,
-              transform: directorVisible ? 'translateY(0)' : 'translateY(10px)',
-              transition: 'opacity 0.8s ease, transform 0.8s ease',
-              fontWeight: '600',
-              fontSize: '18px',
-              marginTop: '10px',
-              color: 'green',
-            }}
-          >
-            Director{directors.length > 1 ? 's' : ''}: {directors.join(', ')}
-          </p>
+          <div style={{ marginTop: '10px' }}>
+            Directed by :
+            {directors.map((director, index) => (
+              <p
+                key={director.id}
+                onClick={(e) => handlePersonClick(director, e)}
+                style={{
+                  opacity: directorVisible ? 1 : 0,
+                  transform: directorVisible ? 'translateY(0)' : 'translateY(10px)',
+                  transition: `opacity 0.8s ease ${index * 0.1}s, transform 0.8s ease ${index * 0.1}s`,
+                  fontWeight: '600',
+                  fontSize: '18px',
+                  marginTop: '5px',
+                  color: 'green',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  
+                }}
+                onMouseEnter={(e) => (e.target.style.color = '#800080')}
+        onMouseLeave={(e) => (e.target.style.color = "green")}
+              >
+                
+                {director.name}
+        {index < directors.length - 1 ? "," : ""}
+              </p>
+            ))}
+          </div>
         )}
 
         {username && (
@@ -175,7 +196,7 @@ function MovieDetail() {
         <AddToDiary movie={movie} />
         <br /><br />
         <AddToWatchlist movie={movie} />
-        
+
         {similarMovies.length > 0 && (
           <div style={{ marginTop: '30px' }}>
             <h3>Similar Movies</h3>
@@ -189,7 +210,7 @@ function MovieDetail() {
                   <img
                     src={sm.poster_path ? `https://image.tmdb.org/t/p/w300${sm.poster_path}` : "https://via.placeholder.com/200x225?text=No+Image"}
                     alt={sm.title}
-                    style={{ width: '100%', borderRadius: '8px' ,  margin: '0px', }}
+                    style={{ width: '100%', borderRadius: '8px', margin: '0px' }}
                   />
                 </div>
               ))}

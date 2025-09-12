@@ -8,6 +8,7 @@ import Signup from "./pages/Signup.jsx";
 import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
 import MovieDetail from "./pages/MovieDetail.jsx";
+import PersonDetail from "./pages/PersonDetail.jsx";
 import Diary from "./pages/Diary.jsx";
 import Watchlist from "./pages/Watchlist.jsx";
 import Header from "./components/Header.jsx";
@@ -27,6 +28,8 @@ createRoot(document.getElementById("root")).render(
           <Route path="/login" element={<Login />} />
           <Route path="/home" element={<Home />} />
           <Route path="/movie/:id" element={<MovieDetail />} />
+          <Route path="/person/:id" element={<PersonDetail />} />
+
           <Route path="/diary" element={<Diary />} />
           <Route path="/watchlist" element={<Watchlist />} />
         </Routes>
