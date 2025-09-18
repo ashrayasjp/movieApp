@@ -5,9 +5,9 @@ export const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // to prevent flicker before checking session
+  const [loading, setLoading] = useState(true); 
 
-  // On app load, check if user is already logged in via session
+  
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -22,7 +22,7 @@ export const UserProvider = ({ children }) => {
 
     fetchUser();
 
-    // optional: listen for global login/logout events from other components
+  
     const handleAuthChange = () => fetchUser();
     window.addEventListener('userAuthChange', handleAuthChange);
 
@@ -33,7 +33,7 @@ export const UserProvider = ({ children }) => {
     try {
       await axios.post('http://localhost:8080/api/users/logout', {}, { withCredentials: true });
       setUser(null);
-      window.dispatchEvent(new Event('userAuthChange')); // notify other components
+      window.dispatchEvent(new Event('userAuthChange')); 
     } catch (err) {
       console.error('Logout failed', err);
     }

@@ -9,6 +9,7 @@ public class MovieDto {
     private String addedDate;
     private String username;
     private String email;
+    private String backdropPath;
 
     public String getTmdbId() {
         return tmdbId;
@@ -73,5 +74,13 @@ public class MovieDto {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getBackdropPath() {
+        return backdropPath;
+    }
+
+    public void setBackdropPath(String backdropPath) {
+        this.backdropPath = backdropPath;
     }
 }

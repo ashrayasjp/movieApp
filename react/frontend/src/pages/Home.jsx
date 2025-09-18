@@ -3,11 +3,14 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 import { UserContext } from "../components/UserContext";
+import CinematicIntro from "../components/CinematicIntro";
 
 function Home() {
   const { user, setUser } = useContext(UserContext);
   const username = user?.username;
+  const navigate = useNavigate();
 
+  const [showCinematic, setShowCinematic] = useState(false);
   const [topMovies, setTopMovies] = useState([]);
   const [currentMovies, setCurrentMovies] = useState([]);
   const [fadeInIndex, setFadeInIndex] = useState(-1);
@@ -16,31 +19,47 @@ function Home() {
   const [filteredPeople, setFilteredPeople] = useState([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [searchType, setSearchType] = useState("all"); 
+  const [searchType, setSearchType] = useState("all");
 
-  const navigate = useNavigate();
-  const fetchTopMovies = async () => {
-    try {
-      let allMovies = [];
-      let page = 1;
-      while (allMovies.length < 50) {
-        const res = await axios.get("http://localhost:8080/api/movies/top-rated", { params: { page } });
-        allMovies = [
-          ...allMovies,
-          ...res.data.filter(movie => !movie.adult && movie.poster_path)
-        ];
-        page++;
-        if (allMovies.length >= 50) break;
-      }
-      setTopMovies(allMovies.slice(0, 50));
-      setLoading(false);
-    } catch (err) {
-      console.error("Failed to fetch movies:", err);
-      setLoading(false);
+
+  useEffect(() => {
+    const viewed = sessionStorage.getItem("viewedCinematic");
+    if (!viewed) {
+      setShowCinematic(true);
+      sessionStorage.setItem("viewedCinematic", "true");
     }
+  }, []);
+
+  const handleCinematicFinish = () => {
+    setShowCinematic(false);
   };
 
-  useEffect(() => { fetchTopMovies(); }, []);
+  // Fetch top movies
+  useEffect(() => {
+    const fetchTopMovies = async () => {
+      try {
+        let allMovies = [];
+        let page = 1;
+        while (allMovies.length < 50) {
+          const res = await axios.get("http://localhost:8080/api/movies/top-rated", { params: { page } });
+          allMovies = [
+            ...allMovies,
+            ...res.data.filter(movie => !movie.adult && movie.backdrop_path)
+          ];
+          page++;
+          if (allMovies.length >= 50) break;
+        }
+        setTopMovies(allMovies.slice(0, 50));
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch movies:", err);
+        setLoading(false);
+      }
+    };
+    fetchTopMovies();
+  }, []);
+
+  // Carousel logic
   useEffect(() => {
     if (!topMovies.length) return;
     let startIndex = 0;
@@ -70,6 +89,8 @@ function Home() {
 
     showNextSet();
   }, [topMovies]);
+
+  // Search
   const fetchSearchResults = async (query, type = "all") => {
     if (!query.trim()) {
       setFilteredMovies([]);
@@ -84,12 +105,12 @@ function Home() {
 
       if (type === "all" || type === "movie") {
         const movieRes = await axios.get("http://localhost:8080/api/movies/search", { params: { query } });
-        movies = movieRes.data.filter(movie => !movie.adult && movie.poster_path); // filter
+        movies = movieRes.data.filter(movie => !movie.adult && movie.poster_path);
       }
 
       if (type === "all" || type === "person") {
         const personRes = await axios.get("http://localhost:8080/api/movies/search/person", { params: { query } });
-        people = (personRes.data || []).filter(p => p.profile_path); // filter
+        people = (personRes.data || []).filter(p => p.profile_path);
       }
 
       setFilteredMovies(movies);
@@ -112,14 +133,15 @@ function Home() {
   };
   const debouncedFetch = debounce(fetchSearchResults, 300);
   const handleSearch = (query) => debouncedFetch(query, searchType);
-  const resetSearch = () => { 
-    setFilteredMovies([]); 
-    setFilteredPeople([]); 
-    setSearched(false); 
+  const resetSearch = () => {
+    setFilteredMovies([]);
+    setFilteredPeople([]);
+    setSearched(false);
   };
 
   const handleMovieClick = (movie, e) => { e.stopPropagation(); navigate(`/movie/${movie.id}`); };
   const handlePersonClick = (person, e) => { e.stopPropagation(); navigate(`/person/${person.id}`); };
+
   const handleLogout = () => { setUser(null); window.dispatchEvent(new Event("userAuthChange")); };
 
   const row1 = currentMovies.slice(0, 6);
@@ -127,6 +149,8 @@ function Home() {
 
   return (
     <div style={{ padding: "20px" }}>
+      {showCinematic && <CinematicIntro onFinish={handleCinematicFinish} />}
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2>{username ? `Welcome, ${username}` : "Welcome"}</h2>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -135,28 +159,28 @@ function Home() {
             onSearch={handleSearch}
             onReset={resetSearch}
           />
-        <select
-  value={searchType}
-  onChange={e => setSearchType(e.target.value)}
-  style={{
-    backgroundColor: '#dcf8e4',   
-    color: 'black',               
-    border: '1px solid #aaa',     
-    borderRadius: '8px',          
-    padding: '6px 12px',          
-    fontSize: '14px',
-    cursor: 'pointer',
-    outline: 'none',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)', 
-    transition: 'all 0.2s ease',
-  }}
-  onMouseEnter={e => e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'}
-  onMouseLeave={e => e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'}
->
-  <option value="all">All</option>
-  <option value="movie">Movies</option>
-  <option value="person">People</option>
-</select>
+          <select
+            value={searchType}
+            onChange={e => setSearchType(e.target.value)}
+            style={{
+              backgroundColor: '#dcf8e4',
+              color: 'black',
+              border: '1px solid #aaa',
+              borderRadius: '8px',
+              padding: '6px 12px',
+              fontSize: '14px',
+              cursor: 'pointer',
+              outline: 'none',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'}
+            onMouseLeave={e => e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'}
+          >
+            <option value="all">All</option>
+            <option value="movie">Movies</option>
+            <option value="person">People</option>
+          </select>
         </div>
       </div>
 
@@ -168,8 +192,18 @@ function Home() {
           {[row1, row2].map((row, idx) => (
             <div key={idx} style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "20px" }}>
               {row.map((movie, index) => (
-                <div key={movie.id} className="movie-card" onClick={(e) => handleMovieClick(movie, e)}
-                     style={{ cursor: "pointer", width: "180px", textAlign: "center", opacity: index <= fadeInIndex ? 1 : 0, transition: "opacity 0.5s ease-in-out" }}>
+                <div
+                  key={movie.id}
+                  className="movie-card"
+                  onClick={(e) => handleMovieClick(movie, e)}
+                  style={{
+                    cursor: "pointer",
+                    width: "180px",
+                    textAlign: "center",
+                    opacity: index <= fadeInIndex ? 1 : 0,
+                    transition: "opacity 0.5s ease-in-out"
+                  }}
+                >
                   <img src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} alt={movie.title} style={{ width: "100%", borderRadius: "10px" }} />
                   <p style={{ margin: "8px 0", fontWeight: "bold", fontSize: "16px" }}>
                     {movie.title} ({movie.release_date?.slice(0, 4) || "N/A"})
